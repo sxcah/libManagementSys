@@ -21,7 +21,7 @@ body {
     color: var(--text-color);
 }
 
-/* --- Navigation Bar --- */
+/* --- Navigation Bar (Used on all pages) --- */
 .navbar {
     display: flex;
     justify-content: space-between;
@@ -29,6 +29,10 @@ body {
     padding: 1rem 5%;
     background-color: #ffffff;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    /* For the landing page, ensure it's on top */
+    position: sticky;
+    top: 0;
+    z-index: 1000;
 }
 
 .logo {
@@ -48,6 +52,121 @@ body {
 .navbar nav a:hover {
     color: var(--primary-color);
 }
+
+/* New: General Button Styling for Navbar/Hero */
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    text-decoration: none;
+    font-weight: bold;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+.primary-btn {
+    background-color: var(--primary-color);
+    color: white;
+    box-shadow: 0 4px 6px rgba(0, 123, 255, 0.3);
+}
+
+.primary-btn:hover {
+    background-color: #0056b3;
+    transform: translateY(-2px);
+}
+
+.login-btn {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+.login-btn:hover {
+    background-color: #218838;
+}
+
+/* --- Landing Page Sections (index.html) --- */
+
+/* Hero Section */
+.hero-section {
+    background: linear-gradient(135deg, var(--bg-color) 0%, #e9ecef 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 100px 20px;
+    min-height: 50vh;
+    border-bottom: 5px solid var(--primary-color);
+}
+
+.hero-content {
+    max-width: 800px;
+}
+
+.hero-content h1 {
+    font-size: 3rem;
+    color: var(--text-color);
+    margin-bottom: 20px;
+    line-height: 1.2;
+}
+
+.hero-content p {
+    font-size: 1.25rem;
+    color: var(--secondary-color);
+    margin-bottom: 30px;
+}
+
+/* Features Section */
+.features-section {
+    padding: 60px 5%;
+    text-align: center;
+}
+
+.features-section h2 {
+    font-size: 2rem;
+    color: var(--primary-color);
+    margin-bottom: 40px;
+}
+
+.feature-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+}
+
+.feature-card {
+    background-color: var(--card-bg);
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    text-align: left;
+    transition: transform 0.3s, box-shadow 0.3s;
+    border-top: 5px solid var(--accent-color);
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.feature-card h3 {
+    color: var(--accent-color);
+    margin-bottom: 15px;
+    font-size: 1.5rem;
+}
+
+.feature-card p {
+    color: var(--secondary-color);
+}
+
+/* Footer */
+.footer {
+    background-color: var(--sidebar-bg);
+    color: #adb5bd;
+    text-align: center;
+    padding: 20px;
+    font-size: 0.9rem;
+}
+
 
 /* --- Authentication Forms (login.php, signUp.php) --- */
 .form-container {
@@ -470,4 +589,26 @@ body {
     .stat-grid {
         grid-template-columns: 1fr;
     }
+    
+    /* Responsive changes for the index page */
+    .hero-content h1 {
+        font-size: 2rem;
+    }
+    
+    .hero-content p {
+        font-size: 1rem;
+    }
+    
+    .feature-list {
+        grid-template-columns: 1fr;
+    }
+
+    .navbar {
+        padding: 1rem 3%;
+    }
+    
+    .navbar nav {
+        display: none; /* Hide main nav links on small screens */
+    }
+    
 }
