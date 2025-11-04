@@ -197,7 +197,7 @@ mysqli_close($conn);
                 <a href="dashboard.php" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
                 
                 <?php if ($role_id == 1 || $role_id == 2): // Admin and Librarian can manage books ?>
-                    <a href="#"><i class="fas fa-book"></i> Book Management</a>
+                    <a href="bookManagement.php"><i class="fas fa-book"></i> Book Management</a>
                 <?php endif; ?>
                 
                 <?php if ($role_id == 1 || $role_id == 2): // Admin and Librarian can manage members ?>
