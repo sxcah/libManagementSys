@@ -2,6 +2,9 @@
 // Include the database connection
 require_once 'connect.php';
 
+// Start the session to check for existing login, though new users won't have one
+session_start();
+
 // Check if a session is already active (user is logged in)
 if (isset($_SESSION['user_id'])) {
     header('Location: dashboard.php');
@@ -34,60 +37,61 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $sql_check = "SELECT user_id FROM users WHERE username = ? OR email = ?";
         
         if ($stmt_check = mysqli_prepare($conn, $sql_check)) {
-            mysqli_stmt_bind_param($stmt_check, "ss", $param_username, $param_email);
+            mysqli_stmt_bind_param($stmt_check, "ss", $param_username_check, $param_email_check);
+            $param_username_check = $username;
+            $param_email_check = $email;
             
-            $param_username = $username;
-            $param_email = $email; 
+            mysqli_stmt_execute($stmt_check);
+            mysqli_stmt_store_result($stmt_check);
 
-            if (mysqli_stmt_execute($stmt_check)) {
-                mysqli_stmt_store_result($stmt_check);
-
-                if (mysqli_stmt_num_rows($stmt_check) >= 1) {
-                    $error_message = "This username or email is already registered.";
-                } else {
-                    // Proceed with INSERT if no existing user found
-                    // --- Database Insert using Prepared Statement ---
-                    $sql_insert = "INSERT INTO users (username, email, password_hash, role_id) VALUES (?, ?, ?, 2)"; // role_id 2 for standard user
-
-                    if ($stmt_insert = mysqli_prepare($conn, $sql_insert)) {
-                        
-                        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-                        $role_id_default = 2; // Assuming 1=Admin, 2=Librarian/Member
-                        
-                        // 'sss' means three string parameters
-                        mysqli_stmt_bind_param($stmt_insert, "sss", $param_username_i, $param_email_i, $param_password_i);
-                        
-                        // Set parameters
-                        $param_username_i = $username;
-                        $param_email_i = $email;
-                        $param_password_i = $hashed_password;
-
-                        if (mysqli_stmt_execute($stmt_insert)) {
-                            $success_message = "Account created successfully! You can now log in.";
-                            // Clear form fields on success
-                            $username = $email = '';
-                        } else {
-                            $error_message = "Error creating account: " . mysqli_error($conn);
-                        }
-
-                        mysqli_stmt_close($stmt_insert);
-                    } else {
-                        $error_message = "Database error: Could not prepare insert statement.";
-                    }
-                }
-            } else {
-                $error_message = "Oops! Something went wrong during the pre-check. Please try again later.";
+            if (mysqli_stmt_num_rows($stmt_check) > 0) {
+                $error_message = "This username or email is already registered.";
             }
-
             mysqli_stmt_close($stmt_check);
         } else {
-            $error_message = "Database error: Could not prepare pre-check statement.";
+            $error_message = "Database check error. Please try again later.";
+        }
+
+        // Proceed with insertion only if no errors occurred
+        if (empty($error_message)) {
+            // --- 4. Insert the new user into the database ---
+            $sql_insert = "INSERT INTO users (username, email, password_hash, role_id) VALUES (?, ?, ?, ?)";
+
+            if ($stmt_insert = mysqli_prepare($conn, $sql_insert)) {
+                // Default role for new sign-ups: 3 (Member)
+                $param_role_id = 3; 
+                
+                // Hash the password
+                $param_password_hash = password_hash($password, PASSWORD_DEFAULT);
+
+                // Bind parameters
+                mysqli_stmt_bind_param($stmt_insert, "sssi", $param_username, $param_email, $param_password_hash, $param_role_id);
+                
+                // Set parameters
+                $param_username = $username;
+                $param_email = $email;
+
+                // Execute the query
+                if (mysqli_stmt_execute($stmt_insert)) {
+                    $success_message = "Account created successfully! You can now log in.";
+                    // Clear variables to empty the form on success
+                    $username = $email = ''; 
+                } else {
+                    $error_message = "Something went wrong. Please try again later. Error: " . mysqli_error($conn);
+                }
+
+                // Close statement
+                mysqli_stmt_close($stmt_insert);
+            } else {
+                $error_message = "Database insert error. Please try again later.";
+            }
         }
     }
-    // mysqli_close($conn); // Close connection
+    
+    // Close connection for post request
+    mysqli_close($conn);
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -99,20 +103,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <body>
     <div class="form-container">
         <div class="auth-card">
-            <h2>Register New Account 📝</h2>
-            
+            <h2>Create New Account 📝</h2>
+
             <?php if (!empty($error_message)): ?>
-                <p class="error-message"><?php echo htmlspecialchars($error_message); ?></p>
+                <div class="message error-message">
+                    <?php echo htmlspecialchars($error_message); ?>
+                </div>
             <?php endif; ?>
 
             <?php if (!empty($success_message)): ?>
-                <p class="success-message"><?php echo htmlspecialchars($success_message); ?></p>
-                <div class="auth-switch"><a href="login.php">Proceed to Login</a></div>
-            <?php endif; ?>
-
-            <!-- The form is only displayed if no final success message is present -->
-            <?php if (empty($success_message)): ?>
-                <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
+                <div class="message success-message">
+                    <?php echo htmlspecialchars($success_message); ?>
+                </div>
+                <!-- Do not display form if registration was successful -->
+                <p style="margin-top: 15px;">
+                    <a href="login.php" class="submit-btn" style="display: inline-block; padding: 10px 20px;">Go to Login</a>
+                </p>
+            <?php else: ?>
+                <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="POST">
                     <div class="form-group">
                         <label for="username">Username</label>
                         <input type="text" id="username" name="username" value="<?php echo htmlspecialchars($username); ?>" required>

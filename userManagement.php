@@ -3,7 +3,7 @@
 session_start();
 
 // Include the database connection
-require_once 'connect.php';
+require_once 'connect.php'; 
 
 // --- 1. SESSION & AUTHENTICATION CHECK ---
 // If the user is not logged in, redirect them to the login page
@@ -16,6 +16,7 @@ if (!isset($_SESSION['user_id'])) {
 $username = $_SESSION['username'] ?? 'User';
 $role_id = $_SESSION['role_id'] ?? 3;
 $user_id = $_SESSION['user_id'];
+$active_page = 'userManagement.php'; // Set active page for sidebar highlighting
 
 // --- 2. AUTHORIZATION CHECK (Admin Only) ---
 // Only Admin (role_id = 1) is authorized for User Management
@@ -28,6 +29,7 @@ if ($role_id != 1) {
 $message = '';
 $error = '';
 $users = [];
+$roles = [];
 
 // --- 3. HANDLE USER ACTIONS (Edit Role / Delete) ---
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
@@ -37,228 +39,190 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         
         // --- 3a. Handle DELETE Action ---
         if ($action == 'delete') {
-            // Prevent admin from deleting their own account
+            // Prevent deleting the currently logged-in user (Admin)
             if ($target_user_id == $user_id) {
-                $error = "Error: You cannot delete your own active account.";
-            } else {
-                $sql = "DELETE FROM users WHERE user_id = ?";
-                if ($stmt = mysqli_prepare($conn, $sql)) {
+                $error = "You cannot delete your own account.";
+            } else if ($target_user_id > 0) {
+                // IMPORTANT: In a real system, you must also check and handle outstanding loans 
+                // before deleting a user (e.g., set loans to null, or cascade delete loans).
+                // Assuming loans are handled elsewhere or cascade deletion is set up.
+
+                $sql_delete = "DELETE FROM users WHERE user_id = ?";
+                if ($stmt = mysqli_prepare($conn, $sql_delete)) {
                     mysqli_stmt_bind_param($stmt, "i", $target_user_id);
                     if (mysqli_stmt_execute($stmt)) {
-                        $message = "User ID: {$target_user_id} successfully deleted.";
+                        if (mysqli_stmt_affected_rows($stmt) > 0) {
+                            $message = "User ID $target_user_id successfully deleted.";
+                        } else {
+                            $error = "User not found or could not be deleted.";
+                        }
                     } else {
-                        $error = "Error deleting user: " . mysqli_error($conn);
+                        $error = "Database error during deletion: " . mysqli_error($conn);
                     }
                     mysqli_stmt_close($stmt);
                 }
             }
         }
         
-        // --- 3b. Handle EDIT ROLE Action (from the modal) ---
-        if ($action == 'edit_role_submit' && $target_user_id > 0 && isset($_POST['new_role_id'])) {
-            $new_role_id = (int)$_POST['new_role_id'];
-            
-            // Prevent admin from demoting or changing the role of their own account
-            if ($target_user_id == $user_id && $new_role_id != $role_id) {
-                $error = "Error: You cannot change the role of your own active Admin account.";
-            } else {
-                $sql = "UPDATE users SET role_id = ? WHERE user_id = ?";
-                if ($stmt = mysqli_prepare($conn, $sql)) {
+        // --- 3b. Handle EDIT ROLE Action ---
+        if ($action == 'edit_role') {
+            $new_role_id = isset($_POST['new_role_id']) ? (int)$_POST['new_role_id'] : 0;
+
+            if ($target_user_id == $user_id) {
+                $error = "You cannot change your own role through this interface.";
+            } else if ($target_user_id > 0 && $new_role_id > 0) {
+                $sql_update = "UPDATE users SET role_id = ? WHERE user_id = ?";
+                if ($stmt = mysqli_prepare($conn, $sql_update)) {
                     mysqli_stmt_bind_param($stmt, "ii", $new_role_id, $target_user_id);
-                    
                     if (mysqli_stmt_execute($stmt)) {
-                        // Check if any rows were affected
                         if (mysqli_stmt_affected_rows($stmt) > 0) {
-                            $message = "User ID: {$target_user_id}'s role was successfully updated to Role ID: {$new_role_id}.";
+                            $message = "User ID $target_user_id role successfully updated.";
                         } else {
-                            $message = "User ID: {$target_user_id}'s role was already Role ID: {$new_role_id}. No changes were made.";
+                            $error = "User not found or role was not changed.";
                         }
                     } else {
-                        $error = "Error updating user role: " . mysqli_error($conn);
+                        $error = "Database error during role update: " . mysqli_error($conn);
                     }
                     mysqli_stmt_close($stmt);
-                } else {
-                    $error = "Database preparation error: " . mysqli_error($conn);
                 }
+            } else {
+                $error = "Invalid user ID or new role ID provided.";
             }
         }
     }
+    // Refresh page to clear POST data and show updated list
+    // header('Location: userManagement.php');
+    // exit;
 }
 
 
-// --- 4. FETCH ALL USERS FOR DISPLAY ---
-// Select all users and join with roles to get the role name
-$sql = "SELECT 
-            u.user_id, 
-            u.username, 
-            u.email, 
-            u.first_name, 
-            r.role_name,
-            u.role_id 
-        FROM users u 
-        JOIN roles r ON u.role_id = r.role_id
-        ORDER BY u.role_id ASC, u.username ASC";
+// --- 4. FETCH ALL USERS ---
+$sql_users = "
+    SELECT u.user_id, u.username, u.role_id, r.role_name 
+    FROM users u
+    JOIN roles r ON u.role_id = r.role_id
+    ORDER BY u.user_id ASC";
 
-if ($result = mysqli_query($conn, $sql)) {
-    // Fetch all records into an array
-    $users = mysqli_fetch_all($result, MYSQLI_ASSOC);
-    mysqli_free_result($result);
+if ($stmt = mysqli_prepare($conn, $sql_users)) {
+    if (mysqli_stmt_execute($stmt)) {
+        $result = mysqli_stmt_get_result($stmt);
+        while ($row = mysqli_fetch_assoc($result)) {
+            $users[] = $row;
+        }
+    } else {
+        $error = "Failed to fetch users: " . mysqli_error($conn);
+    }
+    mysqli_stmt_close($stmt);
+}
+
+
+// --- 5. FETCH ALL ROLES (for the modal) ---
+$sql_roles = "SELECT role_id, role_name FROM roles ORDER BY role_id ASC";
+if ($result = mysqli_query($conn, $sql_roles)) {
+    while ($row = mysqli_fetch_assoc($result)) {
+        $roles[] = $row;
+    }
 } else {
-    $error = "Database query failed: " . mysqli_error($conn);
+    $error = "Failed to fetch roles: " . mysqli_error($conn);
 }
 
-// Fetch all possible roles for the Edit Modal
-$roles = [];
-$sql_roles = "SELECT role_id, role_name FROM roles";
-if ($result_roles = mysqli_query($conn, $sql_roles)) {
-    $roles = mysqli_fetch_all($result_roles, MYSQLI_ASSOC);
-    mysqli_free_result($result_roles);
-}
 
-// Close database connection (note: if you need to perform more queries later, you'd keep it open)
-mysqli_close($conn);
+// --- 6. HTML STRUCTURE ---
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LMS - User Management</title>
+    <title>User Management | LibSys</title>
     <link rel="stylesheet" href="styles.css">
-    <!-- Font Awesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
 </head>
 <body>
     <div class="dashboard-layout">
-        <!-- Sidebar Navigation -->
-        <aside class="sidebar">
-            <h2>Library Pro LMS</h2>
-            <nav class="sidebar-nav">
-                <a href="dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
-                
-                <?php if ($role_id == 1 || $role_id == 2): ?>
-                    <a href="#"><i class="fas fa-book"></i> Book Management</a>
-                <?php endif; ?>
-                
-                <?php if ($role_id == 1 || $role_id == 2): ?>
-                    <a href="#"><i class="fas fa-user-friends"></i> Member Accounts</a>
-                <?php endif; ?>
+        <?php include 'sidebar.php'; // Assumes sidebar.php handles $active_page and $role_id ?>
+        
+        <section class="main-content">
+                <?php include 'navbar.php'; // Assumes navbar.php handles its own variables/includes ?>
+                <h1>User Management</h1>
 
-                <?php if ($role_id == 1 || $role_id == 2): ?>
-                    <a href="#"><i class="fas fa-exchange-alt"></i> Loans & Returns</a>
+                <?php if ($message): ?>
+                    <div class="alert alert-success"><?php echo htmlspecialchars($message); ?></div>
+                <?php endif; ?>
+                <?php if ($error): ?>
+                    <div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div>
                 <?php endif; ?>
 
-                <?php if ($role_id == 1): // Highlight User Management as active ?>
-                    <a href="userManagement.php" class="active"><i class="fas fa-users-cog"></i> User Management</a>
-                <?php endif; ?>
-
-                <a href="logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a>
-            </nav>
-        </aside>
-
-        <!-- Main Content Area -->
-        <main class="main-content">
-            <header class="main-header">
-                <div class="user-info">
-                    <span>Welcome, **<?php echo htmlspecialchars($username); ?>** (Admin)</span>
-                </div>
-            </header>
-
-            <h1 class="page-title">User Management</h1>
-            <p class="page-subtitle">Manage system users, view account details, and modify roles.</p>
-
-            <?php if (!empty($message)): ?>
-                <div class="success-message">
-                    <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($message); ?>
-                </div>
-            <?php endif; ?>
-
-            <?php if (!empty($error)): ?>
-                <div class="error-message">
-                    <i class="fas fa-times-circle"></i> <?php echo htmlspecialchars($error); ?>
-                </div>
-            <?php endif; ?>
-
-            <!-- User Table Container -->
-            <div class="data-card">
-                <div class="card-header">
-                    <h3>All Registered Users</h3>
-                </div>
-                
-                <div class="table-responsive">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Username</th>
-                                <th>Email</th>
-                                <th>Name</th>
-                                <th>Role</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (empty($users)): ?>
+                <div class="card">
+                    <h2>All System Users (<?php echo count($users); ?>)</h2>
+                    
+                    <?php if (empty($users)): ?>
+                        <p style="text-align: center; padding: 20px;">No users found in the system.</p>
+                    <?php else: ?>
+                    <div class="table-container">
+                        <table class="book-table user-table"> 
+                            <thead>
                                 <tr>
-                                    <td colspan="6" style="text-align: center; color: var(--secondary-color);">No users found in the system.</td>
+                                    <th>ID</th>
+                                    <th>Username</th>
+                                    <th>Role</th>
+                                    <th>Actions</th>
                                 </tr>
-                            <?php else: ?>
+                            </thead>
+                            <tbody>
                                 <?php foreach ($users as $user): ?>
                                     <tr>
                                         <td><?php echo htmlspecialchars($user['user_id']); ?></td>
                                         <td><?php echo htmlspecialchars($user['username']); ?></td>
-                                        <td><?php echo htmlspecialchars($user['email']); ?></td>
-                                        <td><?php echo htmlspecialchars($user['first_name']); ?></td>
                                         <td>
-                                            <span class="role-badge role-<?php echo htmlspecialchars($user['role_id']); ?>">
+                                            <span class="role-display role-<?php echo htmlspecialchars($user['role_id']); ?>">
                                                 <?php echo htmlspecialchars($user['role_name']); ?>
                                             </span>
                                         </td>
                                         <td>
-                                            <!-- Edit Button (Opens Modal) -->
-                                            <button 
-                                                class="action-btn edit-btn" 
-                                                onclick="openEditModal(
-                                                    '<?php echo htmlspecialchars($user['user_id']); ?>',
-                                                    '<?php echo htmlspecialchars($user['username']); ?>',
-                                                    '<?php echo htmlspecialchars($user['role_id']); ?>'
-                                                )">
-                                                <i class="fas fa-edit"></i> Edit
-                                            </button>
-                                            
-                                            <!-- Delete Form -->
-                                            <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete user <?php echo htmlspecialchars($user['username']); ?>? This action cannot be undone.');">
-                                                <input type="hidden" name="action" value="delete">
-                                                <input type="hidden" name="target_user_id" value="<?php echo htmlspecialchars($user['user_id']); ?>">
-                                                <button type="submit" class="action-btn delete-btn" <?php echo ($user['user_id'] == $user_id) ? 'disabled' : ''; ?>>
-                                                    <i class="fas fa-trash"></i> Delete
+                                            <?php if ($user['user_id'] != $user_id): // Prevent admin from editing/deleting themselves ?>
+                                                <button 
+                                                    class="btn-primary" 
+                                                    onclick="openEditModal(
+                                                        <?php echo $user['user_id']; ?>, 
+                                                        '<?php echo htmlspecialchars($user['username']); ?>', 
+                                                        '<?php echo htmlspecialchars($user['role_id']); ?>'
+                                                    )"
+                                                >
+                                                    <i class="fas fa-edit"></i> Edit Role
                                                 </button>
-                                            </form>
+                                                
+                                                <form method="POST" action="userManagement.php" style="display: inline-block; margin-left: 5px;" onsubmit="return confirm('Are you sure you want to delete user <?php echo htmlspecialchars($user['username']); ?>? This action is irreversible.');">
+                                                    <input type="hidden" name="action" value="delete">
+                                                    <input type="hidden" name="target_user_id" value="<?php echo $user['user_id']; ?>">
+                                                    <button type="submit" class="btn-danger"><i class="fas fa-trash-alt"></i> Delete</button>
+                                                </form>
+                                            <?php else: ?>
+                                                <span style="color: var(--secondary-color); font-style: italic;">(You)</span>
+                                            <?php endif; ?>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
+                            </tbody>
+                        </table>
+                    </div>
+                    <?php endif; ?>
                 </div>
-            </div>
-
-        </main>
+        </section>
     </div>
-
-    <!-- Edit User Modal -->
+    
     <div id="editUserModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeEditModal()">&times;</span>
-            <h2>Edit User: <span id="modalUsername"></span></h2>
-            <form id="editUserForm" method="POST" action="userManagement.php">
-                <input type="hidden" name="action" value="edit_role_submit">
-                <input type="hidden" name="target_user_id" id="modalUserId">
-
-                <div class="form-group">
-                    <label for="new_role_id">Change Role</label>
-                    <select id="new_role_id" name="new_role_id" required>
+            <h2>Edit User Role: <span id="modalUsername"></span></h2>
+            
+            <form method="POST" action="userManagement.php">
+                <input type="hidden" name="action" value="edit_role">
+                <input type="hidden" id="modalUserId" name="target_user_id">
+                
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label for="new_role_id" style="display: block; font-weight: bold; margin-bottom: 5px;">Select New Role:</label>
+                    <select id="new_role_id" name="new_role_id" required style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
                         <?php foreach ($roles as $role): ?>
                             <option value="<?php echo htmlspecialchars($role['role_id']); ?>">
                                 <?php echo htmlspecialchars($role['role_name']); ?>
@@ -267,7 +231,7 @@ mysqli_close($conn);
                     </select>
                 </div>
                 
-                <button type="submit" class="submit-btn">Save Changes</button>
+                <button type="submit" class="btn-primary submit-btn">Save Changes</button>
                 <div class="auth-switch" style="margin-top: 10px;">
                     <a href="#" onclick="closeEditModal()">Cancel</a>
                 </div>
@@ -302,3 +266,9 @@ mysqli_close($conn);
     </script>
 </body>
 </html>
+<?php
+// Close the database connection at the end
+if (isset($conn)) {
+    mysqli_close($conn);
+}
+?>

@@ -284,7 +284,7 @@ body {
 
 /* Sidebar */
 .sidebar {
-    width: 250px;
+    min-width: 250px;
     background-color: var(--sidebar-bg);
     color: white;
     padding: 20px 0;
@@ -397,7 +397,7 @@ body {
 }
 
 /* Activity/General Card Styles */
-.data-card {
+.data-card, .card {
     background-color: var(--card-bg);
     padding: 20px;
     border-radius: 8px;
@@ -411,7 +411,106 @@ body {
     padding-bottom: 10px;
 }
 
-/* --- User Management Table Styles --- */
+/* --- Book Management Page Styles (Migrated from bookManagement.php) --- */
+
+.card-form {
+    background-color: var(--card-bg);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+/* Overrides the dashboard input styles for a tighter form layout */
+.form-group input[type="text"],
+.form-group input[type="number"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box; 
+}
+
+.table-container {
+    overflow-x: auto;
+    max-height: 60vh; /* Limit height for scrollable area */
+}
+
+.book-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+.book-table th, .book-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+    vertical-align: middle;
+    font-size: 0.9em;
+}
+
+.book-table th {
+    background-color: var(--primary-color);
+    color: white;
+    position: sticky; /* Keep header visible on scroll */
+    top: 0;
+    z-index: 10;
+}
+
+.book-table tbody tr:hover {
+    background-color: #f1f1f1;
+}
+
+.btn-add {
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.btn-add:hover {
+    background-color: #1e7e34;
+}
+
+.btn-edit, .btn-delete {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 5px;
+    transition: opacity 0.3s;
+    font-size: 0.85em;
+}
+
+.btn-edit {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn-edit:hover {
+    opacity: 0.8;
+}
+
+.btn-delete {
+    background-color: #dc3545;
+    color: white;
+}
+
+.btn-delete:hover {
+    opacity: 0.8;
+}
+
+/* --- User Management Table Styles (Original from styles.css) --- */
 .table-responsive {
     overflow-x: auto;
 }
@@ -440,7 +539,7 @@ body {
     background-color: #f5f5f5;
 }
 
-/* Action Buttons */
+/* Action Buttons (Applies to data-table/user management) */
 .action-btn {
     padding: 6px 10px;
     border: none;
@@ -461,14 +560,6 @@ body {
 }
 .edit-btn:hover {
     background-color: #0056b3;
-}
-
-.delete-btn {
-    background-color: #dc3545;
-    color: white;
-}
-.delete-btn:hover {
-    background-color: #a71d2a;
 }
 
 /* Role Badges */
@@ -493,28 +584,30 @@ body {
     color: white;
 }
 
-/* --- Modal Styles --- */
+/* --- Modal Styles (UPDATED to include bookManagement.php's settings) --- */
 .modal {
-    display: none; /* Hidden by default */
+    display: none;
     position: fixed;
-    z-index: 1; 
+    z-index: 1001; /* High z-index to ensure it sits above all dashboard elements */
     left: 0;
     top: 0;
-    width: 100%; 
-    height: 100%; 
-    overflow: auto; 
-    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+    padding-top: 60px; /* Slight top padding */
 }
 
 .modal-content {
     background-color: #fefefe;
-    margin: 15% auto; /* 15% from the top and centered */
+    margin: 5% auto; /* Centered, closer to the top */
     padding: 20px;
     border: 1px solid #888;
-    width: 90%; 
-    max-width: 400px;
+    width: 80%;
+    max-width: 600px; /* Wider modal for edit form */
     border-radius: 8px;
     box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    position: relative;
     text-align: left;
 }
 
@@ -553,7 +646,7 @@ body {
         padding: 10px 0;
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
-    
+
     .sidebar h2 {
         display: none; /* Hide title on mobile */
     }
@@ -572,12 +665,12 @@ body {
         border-left: none !important;
         justify-content: center;
     }
-    
+
     .sidebar-nav a.active {
         border-bottom: 3px solid #ffd700;
         background-color: #495057;
     }
-    
+
     .sidebar-nav a i {
         margin-right: 5px;
     }
@@ -585,20 +678,20 @@ body {
     .main-content {
         padding: 20px 10px;
     }
-    
+
     .stat-grid {
         grid-template-columns: 1fr;
     }
-    
+
     /* Responsive changes for the index page */
     .hero-content h1 {
         font-size: 2rem;
     }
-    
+
     .hero-content p {
         font-size: 1rem;
     }
-    
+
     .feature-list {
         grid-template-columns: 1fr;
     }
@@ -606,9 +699,451 @@ body {
     .navbar {
         padding: 1rem 3%;
     }
-    
+
     .navbar nav {
         display: none; /* Hide main nav links on small screens */
     }
-    
+
+    /* NEW Responsive adjustments for Book Management tables/forms */
+    .book-table th, .book-table td {
+        padding: 8px 10px;
+    }
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* --- Card & Section Styling for Book Management --- */
+.card, .card-form {
+    background-color: var(--card-bg); /* Use existing variable from styles.css */
+    padding: 25px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.card h2, .card-form h2 {
+    color: var(--text-color);
+    border-bottom: 2px solid #eee;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+/* --- Form Grid Layout --- */
+.form-grid {
+    display: grid;
+    /* Create a responsive grid with at least 280px wide columns */
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.form-group-span-2 {
+    grid-column: 1 / -1; /* Make this field span across all columns */
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: var(--secondary-color);
+}
+
+.required-star {
+    color: #dc3545; /* Red color for required fields */
+    font-weight: bold;
+    margin-left: 2px;
+}
+
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    transition: border-color 0.3s;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    border-color: var(--primary-color);
+    outline: none;
+}
+
+/* --- Add Book Button --- */
+.btn-add {
+    background-color: var(--accent-color); /* Green */
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: background-color 0.2s;
+}
+
+.btn-add:hover {
+    background-color: #1e7e34; 
+}
+
+.btn-add i {
+    margin-right: 8px;
+}
+
+/* --- Table Styling --- */
+.table-container {
+    overflow-x: auto; /* Ensures table scrolls horizontally on small screens */
+    margin-top: 15px;
+}
+
+.book-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95em;
+    min-width: 900px; /* Prevent it from getting too narrow */
+}
+
+.book-table thead tr {
+    background-color: var(--secondary-color);
+    color: #ffffff;
+    text-align: left;
+    border-bottom: 3px solid var(--primary-color);
+}
+
+.book-table th, 
+.book-table td {
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    vertical-align: middle;
+}
+
+.book-table tbody tr:nth-child(even) {
+    background-color: #f8f8f8;
+}
+
+.book-table tbody tr:hover {
+    background-color: #e9e9e9;
+}
+
+/* Status Colors for Table Cells */
+.stat-number-success {
+    font-weight: bold;
+    color: var(--accent-color); /* Green for Available > 0 */
+}
+
+.stat-number-error {
+    font-weight: bold;
+    color: #dc3545; /* Red for Available = 0 */
+}
+
+.stat-number-warning {
+    font-weight: bold;
+    color: #ffc107; /* Yellow/Orange for Loaned > 0 */
+}
+
+/* --- Table Action Buttons --- */
+.btn-edit {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn-delete {
+    background-color: #dc3545; /* Red */
+    color: white;
+}
+
+.btn-edit, .btn-delete {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: opacity 0.2s, transform 0.2s;
+    margin-right: 5px;
+    margin-bottom: 5px; /* For stacking on small screens */
+}
+
+.btn-edit:hover, .btn-delete:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.inline-form {
+    display: inline-block;
+    margin: 0;
+}
+
+/* --- Modal Styling --- */
+.modal {
+    display: none; 
+    position: fixed; 
+    z-index: 2000; 
+    left: 0;
+    top: 0;
+    width: 100%; 
+    height: 100%; 
+    overflow: auto; 
+    background-color: rgba(0,0,0,0.5); /* Semi-transparent black overlay */
+}
+
+.modal-content {
+    background-color: var(--card-bg);
+    margin: 10% auto; 
+    padding: 30px;
+    border-radius: 8px;
+    width: 90%; 
+    max-width: 700px;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.close-btn {
+    color: #aaa;
+    float: right;
+    font-size: 32px;
+    font-weight: bold;
+    line-height: 1;
+    cursor: pointer;
+    position: absolute;
+    top: 10px;
+    right: 20px;
+}
+
+.close-btn:hover,
+.close-btn:focus {
+    color: #000;
+    text-decoration: none;
+}
+
+.form-separator {
+    border: 0;
+    height: 1px;
+    background-image: linear-gradient(to right, rgba(0, 0, 0, 0), var(--secondary-color), rgba(0, 0, 0, 0));
+    margin: 30px 0;
+}
+
+.loaned-count-display {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    background-color: #f8f9fa;
+    padding: 10px;
+    border-radius: 4px;
+    display: inline-block;
+    min-width: 50px;
+    text-align: center;
+}
+
+.warning-text-error {
+    color: #dc3545; /* Red */
+    font-size: 0.85em;
+    display: block;
+    margin-top: 5px;
+}
+
+.submit-btn {
+    width: 100%;
+    margin-top: 20px;
+}
+
+.primary-btn {
+    background-color: var(--primary-color);
+    color: white;
+}
+.primary-btn:hover {
+    background-color: #0056b3; 
+}
+
+/* --- Responsive Adjustments for Modal --- */
+@media (max-width: 600px) {
+    .modal-content {
+        margin: 5% auto;
+        width: 95%;
+    }
+
+    .book-table th, 
+    .book-table td {
+        padding: 8px 10px;
+    }
+}
+
+/* --- Loans & Returns Page Specific Styles --- */
+
+/* Overdue Row Highlight */
+.loan-table .table-row-overdue {
+    background-color: #fcebeb; /* Very light red background for overdue rows */
+}
+.loan-table .table-row-overdue:hover {
+    background-color: #f7d5d5; /* Slightly darker red on hover */
+}
+
+/* Status Text Overrides (re-using stat-number classes from Book Management) */
+/* stat-number-success for Active loans */
+/* stat-number-error for Overdue loans */
+
+/* Return Button Styling (re-using btn-primary) */
+.return-btn {
+    background-color: var(--primary-color); /* Blue, similar to the edit button */
+    color: white;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: background-color 0.2s;
+    white-space: nowrap; /* Keep button text on one line */
+}
+
+.return-btn:hover {
+    background-color: #0056b3; 
+}
+
+.return-btn i {
+    margin-right: 5px;
+}
+
+/* --- Loans & Returns Page Specific Styles --- */
+
+/* Overdue Row Highlight */
+.loan-table .table-row-overdue {
+    background-color: #fcebeb; /* Very light red background for overdue rows */
+}
+.loan-table .table-row-overdue:hover {
+    background-color: #f7d5d5; /* Slightly darker red on hover */
+}
+
+/* Return Button Styling (re-using btn-primary) */
+.return-btn {
+    background-color: var(--primary-color); /* Blue, similar to the edit button */
+    color: white;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: background-color 0.2s;
+    white-space: nowrap; /* Keep button text on one line */
+}
+
+.return-btn:hover {
+    background-color: #0056b3; 
+}
+
+.return-btn i {
+    margin-right: 5px;
+}
+
+/* Ensure these base styles are in your CSS for the layout to work */
+.card {
+    background-color: var(--card-bg);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+}
+.table-container {
+    overflow-x: auto;
+}
+.book-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+.book-table th, .book-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+/* Ensure stat-number classes are defined for success/error colors */
+.stat-number-success {
+    color: var(--accent-color); /* Green */
+    font-weight: bold;
+}
+.stat-number-error {
+    color: #dc3545; /* Red */
+    font-weight: bold;
+}
+
+/* --- User Management Page Specific Styles --- */
+
+.user-table th:nth-child(1), 
+.user-table td:nth-child(1) {
+    width: 50px; /* Smaller width for ID column */
+}
+.user-table th:nth-child(4), 
+.user-table td:nth-child(4) {
+    width: 250px; /* Width for the Actions column */
+    white-space: nowrap; /* Prevent buttons from wrapping */
+}
+
+/* Role Label Styling for visual distinction */
+.role-display {
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.85em;
+    font-weight: 600;
+    color: white;
+    text-align: center;
+    display: inline-block;
+}
+
+/* Colors for specific roles */
+.role-1 { /* Admin */
+    background-color: #dc3545; /* Red/Danger */
+}
+.role-2 { /* Librarian */
+    background-color: var(--primary-color); /* Blue/Primary */
+}
+.role-3 { /* Member */
+    background-color: var(--accent-color); /* Green/Accent */
+}
+/* You can add a .role-4 style if you have a 'Banned' or other role */
+
+/* General Button Styles (Ensure these are defined for consistency) */
+/* The buttons rely on the existing .btn-primary and .btn-danger styles */
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: background-color 0.2s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+}
+.btn-primary:hover {
+    background-color: #0056b3; 
+}
+.btn-danger {
+    background-color: #dc3545; /* Red */
+    color: white;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: background-color 0.2s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+}
+.btn-danger:hover {
+    background-color: #bd2130; 
+}
+
+/* Icon spacing for buttons */
+.btn-primary i, .btn-danger i {
+    margin-right: 5px;
 }
