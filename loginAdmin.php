@@ -113,8 +113,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="auth-container">
-        <div class="auth-box">
+    <div class="form-container">
+        <div class="auth-card">
             <div class="auth-header">
                 <h2>Admin Login 🔑</h2>
                 <p>Sign in to the system management portal.</p>
