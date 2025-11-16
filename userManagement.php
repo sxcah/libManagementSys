@@ -43,23 +43,46 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             if ($target_user_id == $user_id) {
                 $error = "You cannot delete your own account.";
             } else if ($target_user_id > 0) {
-                // IMPORTANT: In a real system, you must also check and handle outstanding loans 
-                // before deleting a user (e.g., set loans to null, or cascade delete loans).
-                // Assuming loans are handled elsewhere or cascade deletion is set up.
-
-                $sql_delete = "DELETE FROM users WHERE user_id = ?";
-                if ($stmt = mysqli_prepare($conn, $sql_delete)) {
-                    mysqli_stmt_bind_param($stmt, "i", $target_user_id);
-                    if (mysqli_stmt_execute($stmt)) {
-                        if (mysqli_stmt_affected_rows($stmt) > 0) {
-                            $message = "User ID $target_user_id successfully deleted.";
-                        } else {
-                            $error = "User not found or could not be deleted.";
-                        }
-                    } else {
-                        $error = "Database error during deletion: " . mysqli_error($conn);
+                
+                // NEW: CHECK FOR OUTSTANDING LOANS BEFORE DELETION
+                $has_active_loans = false;
+                $sql_check_loans = "SELECT COUNT(*) FROM loans WHERE user_id = ? AND return_date IS NULL";
+                
+                if ($stmt_check = mysqli_prepare($conn, $sql_check_loans)) {
+                    mysqli_stmt_bind_param($stmt_check, "i", $target_user_id);
+                    mysqli_stmt_execute($stmt_check);
+                    mysqli_stmt_bind_result($stmt_check, $loan_count);
+                    mysqli_stmt_fetch($stmt_check);
+                    mysqli_stmt_close($stmt_check);
+                    
+                    if ($loan_count > 0) {
+                        $has_active_loans = true;
+                        $error = "Cannot delete user ID $target_user_id. They currently have $loan_count active loan(s) and must return all books first.";
                     }
-                    mysqli_stmt_close($stmt);
+                } else {
+                    $error = "Database error checking loans: " . mysqli_error($conn);
+                }
+
+                // Only proceed with user deletion if no active loans were found AND no other error occurred
+                if (!$has_active_loans && empty($error)) {
+                    // IMPORTANT: In a real system, you must also check and handle outstanding loans 
+                    // before deleting a user (e.g., set loans to null, or cascade delete loans).
+                    // Assuming loans are handled elsewhere or cascade deletion is set up.
+
+                    $sql_delete = "DELETE FROM users WHERE user_id = ?";
+                    if ($stmt = mysqli_prepare($conn, $sql_delete)) {
+                        mysqli_stmt_bind_param($stmt, "i", $target_user_id);
+                        if (mysqli_stmt_execute($stmt)) {
+                            if (mysqli_stmt_affected_rows($stmt) > 0) {
+                                $message = "User ID $target_user_id successfully deleted.";
+                            } else {
+                                $error = "User not found or could not be deleted.";
+                            }
+                        } else {
+                            $error = "Database error during deletion: " . mysqli_error($conn);
+                        }
+                        mysqli_stmt_close($stmt);
+                    }
                 }
             }
         }
